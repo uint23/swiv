@@ -107,7 +107,7 @@ static void app_render(struct app *app)
 	if (!app->wld_context) {
 		app->wld_context = wld_wayland_create_context(app->display, WLD_SHM, WLD_NONE);
 		if (!app->wld_context) {
-			fprintf(stderr, "wiv: failed to create wld wl context\n");
+		fprintf(stderr, "swiv: failed to create wld wl context\n");
 			app->running = false;
 			return;
 		}
@@ -116,7 +116,7 @@ static void app_render(struct app *app)
 		if (!wld_wayland_has_format(app->wld_context, app->format)) {
 			app->format = WLD_FORMAT_XRGB8888;
 			if (!wld_wayland_has_format(app->wld_context, app->format)) {
-				fprintf(stderr, "wiv: no supported pixel format\n");
+				fprintf(stderr, "swiv: no supported pixel format\n");
 				app->running = false;
 				return;
 			}
@@ -146,7 +146,7 @@ static void app_render(struct app *app)
 			flags,
 			app->surface);
 		if (!app->wld_surface) {
-			fprintf(stderr, "wiv: failed to create wld surface\n");
+			fprintf(stderr, "swiv: failed to create wld surface\n");
 			app->running = false;
 			return;
 		}
@@ -157,13 +157,13 @@ static void app_render(struct app *app)
 
 	struct wld_buffer *buffer = wld_surface_take(app->wld_surface);
 	if (!buffer) {
-		fprintf(stderr, "wiv: failed to get surface buffer\n");
+		fprintf(stderr, "swiv: failed to get surface buffer\n");
 		app->running = false;
 		return;
 	}
 
 	if (!wld_map(buffer)) {
-		fprintf(stderr, "wiv: failed to map surface buffer\n");
+		fprintf(stderr, "swiv: failed to map surface buffer\n");
 		app->running = false;
 		return;
 	}
@@ -225,7 +225,7 @@ static void app_render(struct app *app)
 
 	union wld_object object;
 	if (!wld_export(buffer, WLD_WAYLAND_OBJECT_BUFFER, &object)) {
-		fprintf(stderr, "wiv: failed to export wl_buffer\n");
+		fprintf(stderr, "swiv: failed to export wl_buffer\n");
 		app->running = false;
 		return;
 	}
@@ -364,13 +364,13 @@ int main(int argc, char **argv)
 	}
 
 	if (load_image(argv[1], &app.image, err, sizeof err) != IMAGE_OK) {
-		fprintf(stderr, "wiv: failed to load image: %s\n", err);
+		fprintf(stderr, "swiv: failed to load image: %s\n", err);
 		return 1;
 	}
 
 	app.display = wl_display_connect(NULL);
 	if (!app.display) {
-		fprintf(stderr, "wiv: failed to connect to wl display\n");
+		fprintf(stderr, "swiv: failed to connect to wl display\n");
 		free_image(&app.image);
 		return 1;
 	}
@@ -380,14 +380,14 @@ int main(int argc, char **argv)
 	wl_display_roundtrip(app.display);
 
 	if (!app.compositor || !app.wm_base) {
-		fprintf(stderr, "wiv: compositor or xdg_wm_base not available\n");
+		fprintf(stderr, "swiv: compositor or xdg_wm_base not available\n");
 		app_cleanup(&app);
 		return 1;
 	}
 
 	app.surface = wl_compositor_create_surface(app.compositor);
 	if (!app.surface) {
-		fprintf(stderr, "wiv: failed to create wl_surface\n");
+		fprintf(stderr, "swiv: failed to create wl_surface\n");
 		app_cleanup(&app);
 		return 1;
 	}
@@ -397,7 +397,7 @@ int main(int argc, char **argv)
 
 	app.xdg_toplevel = xdg_surface_get_toplevel(app.xdg_surface);
 	xdg_toplevel_add_listener(app.xdg_toplevel, &xdg_toplevel_listener, &app);
-	xdg_toplevel_set_title(app.xdg_toplevel, "wiv");
+	xdg_toplevel_set_title(app.xdg_toplevel, "swiv");
 
 	xdg_surface_set_window_geometry(app.xdg_surface, 0, 0,
 	                                app.image.width, app.image.height);

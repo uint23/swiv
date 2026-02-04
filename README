@@ -1,0 +1,7 @@
+swiv
+
+swiv is a simple wayland image viewer. you will need a wayland implementation, and freeway.
+
+it builds with make.
+
+usage: swiv /path/to/image.jpg/png

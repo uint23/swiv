@@ -7,13 +7,8 @@ PROTO_XDG = ${PROTO_DIR}/xdg-shell.xml
 PROTO_XDG_CLIENT_H = ${PROTO_DIR}/xdg-shell-client-protocol.h
 PROTO_XDG_CLIENT_C = ${PROTO_DIR}/xdg-shell-protocol.c
 
-.if defined(.MAKE)
-PKG_CFLAGS != ${PKG_CONFIG} --cflags wayland-client pixman-1
-PKG_LIBS != ${PKG_CONFIG} --libs wayland-client pixman-1
-.else
-PKG_CFLAGS := $(shell $(PKG_CONFIG) --cflags wayland-client pixman-1)
-PKG_LIBS := $(shell $(PKG_CONFIG) --libs wayland-client pixman-1)
-.endif
+PKG_CFLAGS != $(PKG_CONFIG) --cflags wayland-client pixman-1 2>/dev/null || :
+PKG_LIBS != $(PKG_CONFIG) --libs wayland-client pixman-1 2>/dev/null || :
 
 CFLAGS ?= -O2 -g
 CFLAGS += -std=c99 -Wall -Wextra -Wpedantic
@@ -27,32 +22,34 @@ LDLIBS += -L.. -lwld
 LDLIBS += ${PKG_LIBS}
 
 SOURCES = \
-	wiv.c \
+	swiv.c \
 	image.c \
 	${PROTO_XDG_CLIENT_C}
 
 OBJECTS = ${SOURCES:.c=.o}
 
 .PHONY: all clean
+.SUFFIXES:
+.SUFFIXES: .c .o
 PREFIX ?= /usr/local
 BINDIR ?= ${PREFIX}/bin
 
-all: wiv
+all: swiv
 
 ${PROTO_XDG_CLIENT_H} ${PROTO_XDG_CLIENT_C}: ${PROTO_XDG}
 	${WAYLAND_SCANNER} client-header ${PROTO_XDG} ${PROTO_XDG_CLIENT_H}
 	${WAYLAND_SCANNER} public-code ${PROTO_XDG} ${PROTO_XDG_CLIENT_C}
 
-wiv.o: ${PROTO_XDG_CLIENT_H}
+swiv.o: ${PROTO_XDG_CLIENT_H}
 
-protocol/xdg-shell-protocol.o: protocol/xdg-shell-protocol.c
+.c.o:
 	${CC} ${CFLAGS} ${CPPFLAGS} -c -o $@ $<
 
-wiv: $(OBJECTS)
+swiv: $(OBJECTS)
 	${CC} ${LDFLAGS} -o $@ ${OBJECTS} ${LDLIBS}
 
 clean:
-	rm -f $(OBJECTS) wiv ${PROTO_XDG_CLIENT_H} ${PROTO_XDG_CLIENT_C}
+	rm -f $(OBJECTS) swiv ${PROTO_XDG_CLIENT_H} ${PROTO_XDG_CLIENT_C}
 
-install: wiv
-	install -D -m 755 wiv ${DESTDIR}${BINDIR}/wiv
+install: swiv
+	install -D -m 755 swiv ${DESTDIR}${BINDIR}/swiv
