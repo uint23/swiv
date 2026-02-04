@@ -1,6 +1,6 @@
 swiv
 
-swiv is a simple wayland image viewer. you will need a wayland implementation, and freeway.
+swiv is a simple wayland image viewer. you will need a wayland implementation, the neuwld or wld libaries, and pixman.
 
 it builds with make.
 
