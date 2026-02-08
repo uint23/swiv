@@ -1,0 +1,17 @@
+#!/bin/sh -ue
+
+# view filetypes unsupported by stb with swiv
+# needs imagemagick
+
+tmp=$(mktemp).png
+ext=$(printf %s "${1##*.}" | tr A-Z a-z)
+
+case $ext in
+	jpg|jpeg|png|bmp|tga|psd|gif|pic|pnm|ppm|pgm)
+		swiv "$1"
+		;;
+	*)
+		magick "$1" "$tmp"
+		swiv "$tmp"
+		;;
+esac
