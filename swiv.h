@@ -10,8 +10,7 @@
 #include "image.h"
 #include "protocol/xdg-shell-client-protocol.h"
 
-
-struct swiv_ctx {
+struct swiv_wayland_state {
 	struct wl_display *display;
 	struct wl_registry *registry;
 	struct wl_compositor *compositor;
@@ -19,21 +18,34 @@ struct swiv_ctx {
 	struct wl_surface *surface;
 	struct xdg_surface *xdg_surface;
 	struct xdg_toplevel *xdg_toplevel;
+};
 
+struct swiv_render_state {
 	struct wld_context *wld_context;
 	struct wld_surface *wld_surface;
 	enum wld_format format;
+	int surface_width;
+	int surface_height;
+};
 
+struct swiv_view_state {
 	struct image image;
-	bool configured;
-	bool running;
-
 	int pending_width;
 	int pending_height;
 	int window_width;
 	int window_height;
-	int surface_width;
-	int surface_height;
+};
+
+struct swiv_runtime_state {
+	bool configured;
+	bool running;
+};
+
+struct swiv_ctx {
+	struct swiv_wayland_state wl;
+	struct swiv_render_state render;
+	struct swiv_view_state view;
+	struct swiv_runtime_state runtime;
 };
 
 extern struct swiv_ctx *swiv;

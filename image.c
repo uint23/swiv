@@ -104,8 +104,13 @@ void image_force_opaque(struct image *image)
 	for (y = 0; y < image->height; ++y) {
 		uint8_t *row = pixels + (size_t)y * (size_t)image->width * 4;
 
-		for (x = 0; x < image->width; ++x)
+		for (x = 0; x < image->width; ++x) {
+#if __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+			row[x * 4 + 0] = 0xFF;
+#else /* little endian */
 			row[x * 4 + 3] = 0xFF;
+#endif
+		}
 	}
 
 	image->has_alpha = false;

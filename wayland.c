@@ -11,8 +11,8 @@ static void buffer_release(void *data, struct wl_buffer *wl)
 	struct wld_buffer *buffer = data;
 	(void)wl;
 
-	if (swiv && swiv->wld_surface)
-		wld_surface_release(swiv->wld_surface, buffer);
+	if (swiv && swiv->render.wld_surface)
+		wld_surface_release(swiv->render.wld_surface, buffer);
 }
 
 static void registry_global(void *data, struct wl_registry *registry,
@@ -23,13 +23,13 @@ static void registry_global(void *data, struct wl_registry *registry,
 	/* bind wl_compositor and xdg_wm_base */
 	if (strcmp(interface, wl_compositor_interface.name) == 0) {
 		uint32_t bind_version = version < 4 ? version : 4;
-		ctx->compositor = wl_registry_bind(registry, name,
+		ctx->wl.compositor = wl_registry_bind(registry, name,
 		                                   &wl_compositor_interface,
 		                                   bind_version);
 	} else if (strcmp(interface, xdg_wm_base_interface.name) == 0) {
-		ctx->wm_base = wl_registry_bind(registry, name,
+		ctx->wl.wm_base = wl_registry_bind(registry, name,
 		                               &xdg_wm_base_interface, 1);
-		xdg_wm_base_add_listener(ctx->wm_base, &wm_base_listener, ctx);
+		xdg_wm_base_add_listener(ctx->wl.wm_base, &wm_base_listener, ctx);
 	}
 }
 
@@ -46,11 +46,11 @@ static void xdg_surface_configure(void *data, struct xdg_surface *surface, uint3
 
 	/* ack configure */
 	xdg_surface_ack_configure(surface, serial);
-	if (!ctx->configured) {
-		ctx->pending_width = ctx->image.width;
-		ctx->pending_height = ctx->image.height;
+	if (!ctx->runtime.configured) {
+		ctx->view.pending_width = ctx->view.image.width;
+		ctx->view.pending_height = ctx->view.image.height;
 	}
-	ctx->configured = true;
+	ctx->runtime.configured = true;
 	app_render(ctx);
 }
 
@@ -58,7 +58,7 @@ static void xdg_toplevel_close(void *data, struct xdg_toplevel *toplevel)
 {
 	struct swiv_ctx *ctx = data;
 	(void)toplevel;
-	ctx->running = false;
+	ctx->runtime.running = false;
 }
 
 static void xdg_toplevel_configure(void *data, struct xdg_toplevel *toplevel,
@@ -72,10 +72,10 @@ static void xdg_toplevel_configure(void *data, struct xdg_toplevel *toplevel,
 	if (width > 0 || height > 0) {
 		int fitted_w = 0;
 		int fitted_h = 0;
-		aspect_fit(width, height, ctx->image.width, ctx->image.height,
+		aspect_fit(width, height, ctx->view.image.width, ctx->view.image.height,
 		           &fitted_w, &fitted_h);
-		ctx->pending_width = fitted_w;
-		ctx->pending_height = fitted_h;
+		ctx->view.pending_width = fitted_w;
+		ctx->view.pending_height = fitted_h;
 	}
 }
 
