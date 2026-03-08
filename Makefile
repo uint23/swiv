@@ -20,6 +20,7 @@ LDFLAGS += -Wl,-rpath,'$$ORIGIN/..'
 
 LDLIBS += -L.. -lwld
 LDLIBS += ${PKG_LIBS}
+LDLIBS += -lm
 
 SOURCES = \
 	swiv.c \
