@@ -29,7 +29,7 @@ static inline void store_pixel(uint8_t *dst, uint8_t r, uint8_t g, uint8_t b, ui
 #endif
 }
 
-enum image_error_code load_image(const char *path, struct image *out, char *err, size_t err_len)
+enum image_error_code image_load(const char *path, struct image *out, char *err, size_t err_len)
 {
 	int width = 0;
 	int height = 0;
@@ -82,7 +82,7 @@ enum image_error_code load_image(const char *path, struct image *out, char *err,
 	return IMAGE_OK;
 }
 
-void free_image(struct image *image)
+void image_free(struct image *image)
 {
 	if (!image)
 		return;

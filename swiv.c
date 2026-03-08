@@ -361,7 +361,7 @@ static void app_cleanup(struct app *app)
 	if (app->display)
 		wl_display_disconnect(app->display);
 
-	free_image(&app->image);
+	image_free(&app->image);
 }
 
 int main(int argc, char **argv)
@@ -376,7 +376,7 @@ int main(int argc, char **argv)
 		return EXIT_FAILURE;
 	}
 
-	if (load_image(argv[1], &app.image, err, sizeof err) != IMAGE_OK) {
+	if (image_load(argv[1], &app.image, err, sizeof err) != IMAGE_OK) {
 		fprintf(stderr, "swiv: failed to load image: %s\n", err);
 		return EXIT_FAILURE;
 	}
@@ -384,7 +384,7 @@ int main(int argc, char **argv)
 	app.display = wl_display_connect(NULL);
 	if (!app.display) {
 		fprintf(stderr, "swiv: failed to connect to wl display\n");
-		free_image(&app.image);
+		image_free(&app.image);
 		return EXIT_FAILURE;
 	}
 

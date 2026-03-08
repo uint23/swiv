@@ -20,10 +20,10 @@ struct image {
 	bool has_alpha;
 };
 
-enum image_error_code load_image(const char *path, struct image *out, char *err,
+enum image_error_code image_load(const char *path, struct image *out, char *err,
                                  size_t err_len);
 
-void free_image(struct image *image);
+void image_free(struct image *image);
 
 void image_force_opaque(struct image *image);
 
