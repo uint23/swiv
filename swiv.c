@@ -83,7 +83,7 @@ void aspect_fit(int in_w, int in_h, int img_w, int img_h, int *out_w, int *out_h
 	*out_h = h;
 }
 
-void app_render(struct swiv_ctx *ctx)
+void render(struct swiv_ctx *ctx)
 {
 	uint32_t flags = WLD_FLAG_MAP;
 

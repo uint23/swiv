@@ -51,7 +51,7 @@ static void xdg_surface_configure(void *data, struct xdg_surface *surface, uint3
 		ctx->view.pending_height = ctx->view.image.height;
 	}
 	ctx->runtime.configured = true;
-	app_render(ctx);
+	render(ctx);
 }
 
 static void xdg_toplevel_close(void *data, struct xdg_toplevel *toplevel)

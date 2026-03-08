@@ -50,7 +50,7 @@ struct swiv_ctx {
 
 extern struct swiv_ctx *swiv;
 
-void app_render(struct swiv_ctx *ctx);
+void render(struct swiv_ctx *ctx);
 void aspect_fit(int in_w, int in_h, int img_w, int img_h, int *out_w, int *out_h);
 
 #endif /* SWIV_H */
