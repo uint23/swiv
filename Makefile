@@ -54,3 +54,7 @@ clean:
 
 install: swiv
 	install -D -m 755 swiv ${DESTDIR}${BINDIR}/swiv
+
+compile_flags:
+	@rm -f compile_flags.txt
+	@for f in ${CFLAGS} ${LDFLAGS} ${LDLIBS}; do echo $$f >> compile_flags.txt; done
