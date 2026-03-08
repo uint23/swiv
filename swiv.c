@@ -375,19 +375,19 @@ int main(int argc, char **argv)
 
 	if (argc != 2) {
 		fprintf(stderr, "usage: %s [/path/to/image]\n", argv[0]);
-		return 1;
+		return EXIT_FAILURE;
 	}
 
 	if (load_image(argv[1], &app.image, err, sizeof err) != IMAGE_OK) {
 		fprintf(stderr, "swiv: failed to load image: %s\n", err);
-		return 1;
+		return EXIT_FAILURE;
 	}
 
 	app.display = wl_display_connect(NULL);
 	if (!app.display) {
 		fprintf(stderr, "swiv: failed to connect to wl display\n");
 		free_image(&app.image);
-		return 1;
+		return EXIT_FAILURE;
 	}
 
 	/* registry */
@@ -398,14 +398,14 @@ int main(int argc, char **argv)
 	if (!app.compositor || !app.wm_base) {
 		fprintf(stderr, "swiv: compositor or xdg_wm_base not available\n");
 		app_cleanup(&app);
-		return 1;
+		return EXIT_FAILURE;
 	}
 
 	app.surface = wl_compositor_create_surface(app.compositor);
 	if (!app.surface) {
 		fprintf(stderr, "swiv: failed to create wl_surface\n");
 		app_cleanup(&app);
-		return 1;
+		return EXIT_FAILURE;
 	}
 
 	/* XDG surface */
@@ -428,5 +428,5 @@ int main(int argc, char **argv)
 		;
 
 	app_cleanup(&app);
-	return 0;
+	return EXIT_SUCCESS;
 }
