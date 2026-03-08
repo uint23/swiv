@@ -279,18 +279,24 @@ static void pointer_axis(void *data, struct wl_pointer *pointer, uint32_t time,
 	double scroll;
 	double anchor_x;
 	double anchor_y;
+	uint32_t mods;
 	(void)pointer;
 	(void)time;
 
 	if (axis != WL_POINTER_AXIS_VERTICAL_SCROLL)
 		return;
 
-	if (ctx->input.pointer_inside) {
-		anchor_x = ctx->input.pointer_x;
-		anchor_y = ctx->input.pointer_y;
-	} else {
+	mods = mods_pressed(ctx->input.xkb_state);
+	if ((mods & MOD_SHIFT) || !ctx->input.pointer_inside) {
+		if (mods & MOD_SHIFT) {
+			ctx->view.pan_x = 0.0;
+			ctx->view.pan_y = 0.0;
+		}
 		anchor_x = ctx->view.window_width * 0.5;
 		anchor_y = ctx->view.window_height * 0.5;
+	} else {
+		anchor_x = ctx->input.pointer_x;
+		anchor_y = ctx->input.pointer_y;
 	}
 
 	scroll = wl_fixed_to_double(value);
