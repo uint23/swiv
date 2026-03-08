@@ -106,6 +106,11 @@ void handle_action(struct swiv_ctx *ctx, enum swiv_action action)
 		if (ctx->runtime.configured)
 			render(ctx);
 		break;
+	case SWIV_ACTION_TOGGLE_LOCK_WINDOW_ASPECT:
+		ctx->options.lock_window_aspect = !ctx->options.lock_window_aspect;
+		if (ctx->runtime.configured)
+			render(ctx);
+		break;
 	}
 }
 
@@ -311,6 +316,7 @@ static bool setup(struct swiv_ctx *ctx)
 
 	/* options */
 	ctx->options.antialias = false;
+	ctx->options.lock_window_aspect = false;
 
 	return true;
 }

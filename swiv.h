@@ -17,6 +17,7 @@ struct xkb_state;
 enum swiv_action {
 	SWIV_ACTION_QUIT = 0,
 	SWIV_ACTION_TOGGLE_ANTIALIAS,
+	SWIV_ACTION_TOGGLE_LOCK_WINDOW_ASPECT,
 };
 
 struct swiv_wayland_state {
@@ -60,6 +61,7 @@ struct swiv_input_state {
 
 struct swiv_options {
 	bool antialias;
+	bool lock_window_aspect;
 };
 
 struct swiv_ctx {

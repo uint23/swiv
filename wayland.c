@@ -57,9 +57,9 @@ static void xdg_wm_base_ping(void *data, struct xdg_wm_base *base, uint32_t seri
 
 static const struct keybind keybinds[] = { /* TODO? move to config */
 	{ .mods = 0, .keysym = XKB_KEY_a, .action = SWIV_ACTION_TOGGLE_ANTIALIAS },
-	{ .mods = MOD_SHIFT, .keysym = XKB_KEY_A, .action = SWIV_ACTION_TOGGLE_ANTIALIAS },
 	{ .mods = 0, .keysym = XKB_KEY_Escape, .action = SWIV_ACTION_QUIT },
 	{ .mods = 0, .keysym = XKB_KEY_q, .action = SWIV_ACTION_QUIT },
+	{ .mods = 0, .keysym = XKB_KEY_l, .action = SWIV_ACTION_TOGGLE_LOCK_WINDOW_ASPECT },
 };
 
 static const struct wl_keyboard_listener keyboard_listener = {
@@ -324,13 +324,20 @@ static void xdg_toplevel_configure(void *data, struct xdg_toplevel *toplevel,
 	(void)toplevel;
 	(void)states;
 
-	if (width > 0 || height > 0) {
+	if (ctx->options.lock_window_aspect) {
 		int fitted_w = 0;
 		int fitted_h = 0;
-		aspect_fit(width, height, ctx->view.image.width, ctx->view.image.height,
-		           &fitted_w, &fitted_h);
-		ctx->view.pending_width = fitted_w;
-		ctx->view.pending_height = fitted_h;
+		if (width > 0 || height > 0) {
+			aspect_fit(width, height, ctx->view.image.width, ctx->view.image.height,
+			           &fitted_w, &fitted_h);
+			ctx->view.pending_width = fitted_w;
+			ctx->view.pending_height = fitted_h;
+		}
+	} else {
+		if (width > 0)
+			ctx->view.pending_width = width;
+		if (height > 0)
+			ctx->view.pending_height = height;
 	}
 }
 
