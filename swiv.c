@@ -101,6 +101,11 @@ void handle_action(struct swiv_ctx *ctx, enum swiv_action action)
 	case SWIV_ACTION_QUIT:
 		ctx->runtime.running = false;
 		break;
+	case SWIV_ACTION_TOGGLE_ANTIALIAS:
+		ctx->options.antialias = !ctx->options.antialias;
+		if (ctx->runtime.configured)
+			render(ctx);
+		break;
 	}
 }
 
@@ -200,7 +205,10 @@ void render(struct swiv_ctx *ctx)
 		                            pixman_double_to_fixed((double)ctx->view.image.width / (double)draw_w),
 		                            pixman_double_to_fixed((double)ctx->view.image.height / (double)draw_h));
 		pixman_image_set_transform(src, &transform);
-		pixman_image_set_filter(src, PIXMAN_FILTER_BILINEAR, NULL, 0);
+		pixman_filter_t filter = ctx->options.antialias
+			? PIXMAN_FILTER_BILINEAR
+			: PIXMAN_FILTER_NEAREST;
+		pixman_image_set_filter(src, filter, NULL, 0);
 
 		pixman_image_composite32(PIXMAN_OP_SRC, src, NULL, dst,
 		                         0, 0, 0, 0,
@@ -300,6 +308,9 @@ static bool setup(struct swiv_ctx *ctx)
 
 	if (ctx->render.format == WLD_FORMAT_XRGB8888 && ctx->view.image.has_alpha)
 		image_force_opaque(&ctx->view.image);
+
+	/* options */
+	ctx->options.antialias = false;
 
 	return true;
 }

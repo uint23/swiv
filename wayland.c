@@ -56,6 +56,8 @@ static void xdg_toplevel_configure(void *data, struct xdg_toplevel *toplevel,
 static void xdg_wm_base_ping(void *data, struct xdg_wm_base *base, uint32_t serial);
 
 static const struct keybind keybinds[] = { /* TODO? move to config */
+	{ .mods = 0, .keysym = XKB_KEY_a, .action = SWIV_ACTION_TOGGLE_ANTIALIAS },
+	{ .mods = MOD_SHIFT, .keysym = XKB_KEY_A, .action = SWIV_ACTION_TOGGLE_ANTIALIAS },
 	{ .mods = 0, .keysym = XKB_KEY_Escape, .action = SWIV_ACTION_QUIT },
 	{ .mods = 0, .keysym = XKB_KEY_q, .action = SWIV_ACTION_QUIT },
 };

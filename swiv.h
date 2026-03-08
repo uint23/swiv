@@ -16,6 +16,7 @@ struct xkb_state;
 
 enum swiv_action {
 	SWIV_ACTION_QUIT = 0,
+	SWIV_ACTION_TOGGLE_ANTIALIAS,
 };
 
 struct swiv_wayland_state {
@@ -57,12 +58,17 @@ struct swiv_input_state {
 	struct xkb_state *xkb_state;
 };
 
+struct swiv_options {
+	bool antialias;
+};
+
 struct swiv_ctx {
 	struct swiv_wayland_state wl;
 	struct swiv_render_state render;
 	struct swiv_view_state view;
 	struct swiv_runtime_state runtime;
 	struct swiv_input_state input;
+	struct swiv_options options;
 };
 
 extern struct swiv_ctx *swiv;
