@@ -38,65 +38,60 @@ struct swiv_ctx {
 	int surface_height;
 };
 
+static void app_cleanup(struct swiv_ctx *ctx);
+static void app_render(struct swiv_ctx *ctx);
+static void app_update_size(struct swiv_ctx *ctx);
+static void aspect_fit(int in_w, int in_h, int img_w, int img_h, int *out_w, int *out_h);
+static void buffer_release(void *data, struct wl_buffer *wl);
+static void registry_global(void *data, struct wl_registry *registry, uint32_t name, const char *interface, uint32_t version);
+static void registry_remove(void *data, struct wl_registry *registry, uint32_t name);
+static void xdg_surface_configure(void *data, struct xdg_surface *surface, uint32_t serial);
+static void xdg_toplevel_close(void *data, struct xdg_toplevel *toplevel);
+static void xdg_toplevel_configure(void *data, struct xdg_toplevel *toplevel, int32_t width, int32_t height, struct wl_array *states);
+static void xdg_wm_base_ping(void *data, struct xdg_wm_base *base, uint32_t serial);
+
 static struct swiv_ctx *swiv = NULL;
-
-static void buffer_release(void *data, struct wl_buffer *wl)
-{
-	struct wld_buffer *buffer = data;
-	(void)wl;
-
-	if (swiv && swiv->wld_surface)
-		wld_surface_release(swiv->wld_surface, buffer);
-}
-
 static const struct wl_buffer_listener buffer_listener = {
 	.release = buffer_release,
 };
+static const struct xdg_wm_base_listener wm_base_listener = {
+	.ping = xdg_wm_base_ping,
+};
+static const struct xdg_surface_listener xdg_surface_listener = {
+	.configure = xdg_surface_configure,
+};
+static const struct xdg_toplevel_listener xdg_toplevel_listener = {
+	.configure = xdg_toplevel_configure,
+	.close = xdg_toplevel_close,
+};
+static const struct wl_registry_listener registry_listener = {
+	.global = registry_global,
+	.global_remove = registry_remove,
+};
 
-static void app_update_size(struct swiv_ctx *ctx)
+static void app_cleanup(struct swiv_ctx *ctx)
 {
-	int width = ctx->window_width;
-	int height = ctx->window_height;
+	if (ctx->wld_surface)
+		wld_destroy_surface(ctx->wld_surface);
+	if (ctx->wld_context)
+		wld_destroy_context(ctx->wld_context);
 
-	if (ctx->pending_width > 0)
-		width = ctx->pending_width;
-	else if (width == 0)
-		width = ctx->image.width;
+	if (ctx->xdg_toplevel)
+		xdg_toplevel_destroy(ctx->xdg_toplevel);
+	if (ctx->xdg_surface)
+		xdg_surface_destroy(ctx->xdg_surface);
+	if (ctx->surface)
+		wl_surface_destroy(ctx->surface);
+	if (ctx->wm_base)
+		xdg_wm_base_destroy(ctx->wm_base);
+	if (ctx->compositor)
+		wl_compositor_destroy(ctx->compositor);
+	if (ctx->registry)
+		wl_registry_destroy(ctx->registry);
+	if (ctx->display)
+		wl_display_disconnect(ctx->display);
 
-	if (ctx->pending_height > 0)
-		height = ctx->pending_height;
-	else if (height == 0)
-		height = ctx->image.height;
-
-	ctx->window_width = width;
-	ctx->window_height = height;
-	ctx->pending_width = 0;
-	ctx->pending_height = 0;
-}
-
-static void aspect_fit(int in_w, int in_h, int img_w, int img_h, int *out_w, int *out_h)
-{
-	if (in_w <= 0 || in_h <= 0) {
-		*out_w = img_w;
-		*out_h = img_h;
-		return;
-	}
-
-	/* aspect ratio, fit size */
-	double scale_w = (double)in_w / (double)img_w;
-	double scale_h = (double)in_h / (double)img_h;
-	double scale = scale_w < scale_h ? scale_w : scale_h;
-
-	int w = (int)(img_w * scale + 0.5);
-	int h = (int)(img_h * scale + 0.5);
-
-	if (w < 1)
-		w = 1;
-	if (h < 1)
-		h = 1;
-
-	*out_w = w;
-	*out_h = h;
+	image_free(&ctx->image);
 }
 
 static void app_render(struct swiv_ctx *ctx)
@@ -251,63 +246,60 @@ static void app_render(struct swiv_ctx *ctx)
 	wl_display_flush(ctx->display);
 }
 
-static void xdg_wm_base_ping(void *data, struct xdg_wm_base *base, uint32_t serial)
+static void app_update_size(struct swiv_ctx *ctx)
 {
-	(void)data;
-	xdg_wm_base_pong(base, serial);
+	int width = ctx->window_width;
+	int height = ctx->window_height;
+
+	if (ctx->pending_width > 0)
+		width = ctx->pending_width;
+	else if (width == 0)
+		width = ctx->image.width;
+
+	if (ctx->pending_height > 0)
+		height = ctx->pending_height;
+	else if (height == 0)
+		height = ctx->image.height;
+
+	ctx->window_width = width;
+	ctx->window_height = height;
+	ctx->pending_width = 0;
+	ctx->pending_height = 0;
 }
 
-static const struct xdg_wm_base_listener wm_base_listener = {
-	.ping = xdg_wm_base_ping,
-};
-
-static void xdg_surface_configure(void *data, struct xdg_surface *surface, uint32_t serial)
+static void aspect_fit(int in_w, int in_h, int img_w, int img_h, int *out_w, int *out_h)
 {
-	struct swiv_ctx *ctx = data;
-
-	/* ack configure */
-	xdg_surface_ack_configure(surface, serial);
-	if (!ctx->configured) {
-		ctx->pending_width = ctx->image.width;
-		ctx->pending_height = ctx->image.height;
+	if (in_w <= 0 || in_h <= 0) {
+		*out_w = img_w;
+		*out_h = img_h;
+		return;
 	}
-	ctx->configured = true;
-	app_render(ctx);
+
+	/* aspect ratio, fit size */
+	double scale_w = (double)in_w / (double)img_w;
+	double scale_h = (double)in_h / (double)img_h;
+	double scale = scale_w < scale_h ? scale_w : scale_h;
+
+	int w = (int)(img_w * scale + 0.5);
+	int h = (int)(img_h * scale + 0.5);
+
+	if (w < 1)
+		w = 1;
+	if (h < 1)
+		h = 1;
+
+	*out_w = w;
+	*out_h = h;
 }
 
-static const struct xdg_surface_listener xdg_surface_listener = {
-	.configure = xdg_surface_configure,
-};
-
-static void xdg_toplevel_configure(void *data, struct xdg_toplevel *toplevel,
-                                  int32_t width, int32_t height,
-                                  struct wl_array *states)
+static void buffer_release(void *data, struct wl_buffer *wl)
 {
-	struct swiv_ctx *ctx = data;
-	(void)toplevel;
-	(void)states;
+	struct wld_buffer *buffer = data;
+	(void)wl;
 
-	if (width > 0 || height > 0) {
-		int fitted_w = 0;
-		int fitted_h = 0;
-		aspect_fit(width, height, ctx->image.width, ctx->image.height,
-		           &fitted_w, &fitted_h);
-		ctx->pending_width = fitted_w;
-		ctx->pending_height = fitted_h;
-	}
+	if (swiv && swiv->wld_surface)
+		wld_surface_release(swiv->wld_surface, buffer);
 }
-
-static void xdg_toplevel_close(void *data, struct xdg_toplevel *toplevel)
-{
-	struct swiv_ctx *ctx = data;
-	(void)toplevel;
-	ctx->running = false;
-}
-
-static const struct xdg_toplevel_listener xdg_toplevel_listener = {
-	.configure = xdg_toplevel_configure,
-	.close = xdg_toplevel_close,
-};
 
 static void registry_global(void *data, struct wl_registry *registry,
                             uint32_t name, const char *interface, uint32_t version)
@@ -334,34 +326,49 @@ static void registry_remove(void *data, struct wl_registry *registry, uint32_t n
 	(void)name;
 }
 
-static const struct wl_registry_listener registry_listener = {
-	.global = registry_global,
-	.global_remove = registry_remove,
-};
-
-static void app_cleanup(struct swiv_ctx *ctx)
+static void xdg_surface_configure(void *data, struct xdg_surface *surface, uint32_t serial)
 {
-	if (ctx->wld_surface)
-		wld_destroy_surface(ctx->wld_surface);
-	if (ctx->wld_context)
-		wld_destroy_context(ctx->wld_context);
+	struct swiv_ctx *ctx = data;
 
-	if (ctx->xdg_toplevel)
-		xdg_toplevel_destroy(ctx->xdg_toplevel);
-	if (ctx->xdg_surface)
-		xdg_surface_destroy(ctx->xdg_surface);
-	if (ctx->surface)
-		wl_surface_destroy(ctx->surface);
-	if (ctx->wm_base)
-		xdg_wm_base_destroy(ctx->wm_base);
-	if (ctx->compositor)
-		wl_compositor_destroy(ctx->compositor);
-	if (ctx->registry)
-		wl_registry_destroy(ctx->registry);
-	if (ctx->display)
-		wl_display_disconnect(ctx->display);
+	/* ack configure */
+	xdg_surface_ack_configure(surface, serial);
+	if (!ctx->configured) {
+		ctx->pending_width = ctx->image.width;
+		ctx->pending_height = ctx->image.height;
+	}
+	ctx->configured = true;
+	app_render(ctx);
+}
 
-	image_free(&ctx->image);
+static void xdg_toplevel_close(void *data, struct xdg_toplevel *toplevel)
+{
+	struct swiv_ctx *ctx = data;
+	(void)toplevel;
+	ctx->running = false;
+}
+
+static void xdg_toplevel_configure(void *data, struct xdg_toplevel *toplevel,
+                                  int32_t width, int32_t height,
+                                  struct wl_array *states)
+{
+	struct swiv_ctx *ctx = data;
+	(void)toplevel;
+	(void)states;
+
+	if (width > 0 || height > 0) {
+		int fitted_w = 0;
+		int fitted_h = 0;
+		aspect_fit(width, height, ctx->image.width, ctx->image.height,
+		           &fitted_w, &fitted_h);
+		ctx->pending_width = fitted_w;
+		ctx->pending_height = fitted_h;
+	}
+}
+
+static void xdg_wm_base_ping(void *data, struct xdg_wm_base *base, uint32_t serial)
+{
+	(void)data;
+	xdg_wm_base_pong(base, serial);
 }
 
 int main(int argc, char **argv)
