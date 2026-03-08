@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include <pixman-1/pixman.h>
+#include <xkbcommon/xkbcommon.h>
 
 #include "swiv.h"
 #include "wayland.h"
@@ -23,6 +24,10 @@ static void app_cleanup(struct swiv_ctx *ctx)
 		xdg_toplevel_destroy(ctx->wl.xdg_toplevel);
 	if (ctx->wl.xdg_surface)
 		xdg_surface_destroy(ctx->wl.xdg_surface);
+	if (ctx->wl.keyboard)
+		wl_keyboard_destroy(ctx->wl.keyboard);
+	if (ctx->wl.seat)
+		wl_seat_destroy(ctx->wl.seat);
 	if (ctx->wl.surface)
 		wl_surface_destroy(ctx->wl.surface);
 	if (ctx->wl.wm_base)
@@ -33,6 +38,13 @@ static void app_cleanup(struct swiv_ctx *ctx)
 		wl_registry_destroy(ctx->wl.registry);
 	if (ctx->wl.display)
 		wl_display_disconnect(ctx->wl.display);
+
+	if (ctx->input.xkb_state)
+		xkb_state_unref(ctx->input.xkb_state);
+	if (ctx->input.xkb_keymap)
+		xkb_keymap_unref(ctx->input.xkb_keymap);
+	if (ctx->input.xkb_context)
+		xkb_context_unref(ctx->input.xkb_context);
 
 	image_free(&ctx->view.image);
 }
@@ -222,11 +234,19 @@ static bool setup(struct swiv_ctx *ctx)
 		return false;
 	}
 
+	/* xkb */
+	ctx->input.xkb_context = xkb_context_new(XKB_CONTEXT_NO_FLAGS);
+	if (!ctx->input.xkb_context) {
+		fprintf(stderr, "swiv: failed to create xkb context\n");
+		return false;
+	}
+
 	/* registry */
 	ctx->wl.registry = wl_display_get_registry(ctx->wl.display);
 	wl_registry_add_listener(ctx->wl.registry, &registry_listener, ctx);
 	wl_display_roundtrip(ctx->wl.display);
 
+	/* surface */
 	if (!ctx->wl.compositor || !ctx->wl.wm_base) {
 		fprintf(stderr, "swiv: compositor or xdg_wm_base not available\n");
 		return false;

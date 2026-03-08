@@ -7,8 +7,8 @@ PROTO_XDG = ${PROTO_DIR}/xdg-shell.xml
 PROTO_XDG_CLIENT_H = ${PROTO_DIR}/xdg-shell-client-protocol.h
 PROTO_XDG_CLIENT_C = ${PROTO_DIR}/xdg-shell-protocol.c
 
-PKG_CFLAGS != $(PKG_CONFIG) --cflags wayland-client pixman-1 2>/dev/null || :
-PKG_LIBS != $(PKG_CONFIG) --libs wayland-client pixman-1 2>/dev/null || :
+PKG_CFLAGS != $(PKG_CONFIG) --cflags wayland-client pixman-1 xkbcommon 2>/dev/null || :
+PKG_LIBS != $(PKG_CONFIG) --libs wayland-client pixman-1 xkbcommon 2>/dev/null || :
 
 CFLAGS ?= -O2
 CFLAGS += -std=c99 -Wall -Wextra -Wpedantic

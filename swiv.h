@@ -10,11 +10,17 @@
 #include "image.h"
 #include "protocol/xdg-shell-client-protocol.h"
 
+struct xkb_context;
+struct xkb_keymap;
+struct xkb_state;
+
 struct swiv_wayland_state {
 	struct wl_display *display;
 	struct wl_registry *registry;
 	struct wl_compositor *compositor;
 	struct xdg_wm_base *wm_base;
+	struct wl_seat *seat;
+	struct wl_keyboard *keyboard;
 	struct wl_surface *surface;
 	struct xdg_surface *xdg_surface;
 	struct xdg_toplevel *xdg_toplevel;
@@ -41,11 +47,18 @@ struct swiv_runtime_state {
 	bool running;
 };
 
+struct swiv_input_state {
+	struct xkb_context *xkb_context;
+	struct xkb_keymap *xkb_keymap;
+	struct xkb_state *xkb_state;
+};
+
 struct swiv_ctx {
 	struct swiv_wayland_state wl;
 	struct swiv_render_state render;
 	struct swiv_view_state view;
 	struct swiv_runtime_state runtime;
+	struct swiv_input_state input;
 };
 
 extern struct swiv_ctx *swiv;
