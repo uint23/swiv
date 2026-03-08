@@ -14,6 +14,10 @@ struct xkb_context;
 struct xkb_keymap;
 struct xkb_state;
 
+enum swiv_action {
+	SWIV_ACTION_QUIT = 0,
+};
+
 struct swiv_wayland_state {
 	struct wl_display *display;
 	struct wl_registry *registry;
@@ -63,6 +67,7 @@ struct swiv_ctx {
 
 extern struct swiv_ctx *swiv;
 
+void handle_action(struct swiv_ctx *ctx, enum swiv_action action);
 void render(struct swiv_ctx *ctx);
 void aspect_fit(int in_w, int in_h, int img_w, int img_h, int *out_w, int *out_h);
 

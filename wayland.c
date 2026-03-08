@@ -21,10 +21,9 @@ enum {
 struct keybind {
 	uint32_t mods;
 	xkb_keysym_t keysym;
-	void (*action)(struct swiv_ctx *ctx);
+	enum swiv_action action;
 };
 
-static void action_quit(struct swiv_ctx *ctx);
 static void buffer_release(void *data, struct wl_buffer *wl);
 static void keybind_perform(struct swiv_ctx *ctx, xkb_keysym_t keysym);
 static void keyboard_clear_state(struct swiv_ctx *ctx);
@@ -56,15 +55,9 @@ static void xdg_toplevel_configure(void *data, struct xdg_toplevel *toplevel,
                                    struct wl_array *states);
 static void xdg_wm_base_ping(void *data, struct xdg_wm_base *base, uint32_t serial);
 
-static void action_quit(struct swiv_ctx *ctx)
-{
-	ctx->runtime.running = false;
-}
-
 static const struct keybind keybinds[] = { /* TODO? move to config */
-	{ .mods = 0, .keysym = XKB_KEY_Escape, .action = action_quit },
-	{ .mods = 0, .keysym = XKB_KEY_q, .action = action_quit },
-	{ .mods = MOD_SHIFT, .keysym = XKB_KEY_Q, .action = action_quit },
+	{ .mods = 0, .keysym = XKB_KEY_Escape, .action = SWIV_ACTION_QUIT },
+	{ .mods = 0, .keysym = XKB_KEY_q, .action = SWIV_ACTION_QUIT },
 };
 
 static const struct wl_keyboard_listener keyboard_listener = {
@@ -96,7 +89,7 @@ static void keybind_perform(struct swiv_ctx *ctx, xkb_keysym_t keysym)
 	uint32_t mods = mods_pressed(ctx->input.xkb_state);
 	for (size_t i = 0; i < sizeof keybinds / sizeof keybinds[0]; ++i) {
 		if (keybinds[i].keysym == keysym && keybinds[i].mods == mods) {
-			keybinds[i].action(ctx);
+			handle_action(ctx, keybinds[i].action);
 			return;
 		}
 	}

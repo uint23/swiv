@@ -95,6 +95,15 @@ void aspect_fit(int in_w, int in_h, int img_w, int img_h, int *out_w, int *out_h
 	*out_h = h;
 }
 
+void handle_action(struct swiv_ctx *ctx, enum swiv_action action)
+{
+	switch (action) {
+	case SWIV_ACTION_QUIT:
+		ctx->runtime.running = false;
+		break;
+	}
+}
+
 void render(struct swiv_ctx *ctx)
 {
 	uint32_t flags = WLD_FLAG_MAP;
