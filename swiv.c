@@ -84,6 +84,7 @@ static void aspect_fit(int in_w, int in_h, int img_w, int img_h, int *out_w, int
 		return;
 	}
 
+	/* aspect ratio, fit size */
 	double scale_w = (double)in_w / (double)img_w;
 	double scale_h = (double)in_h / (double)img_h;
 	double scale = scale_w < scale_h ? scale_w : scale_h;
@@ -104,6 +105,7 @@ static void app_render(struct app *app)
 {
 	uint32_t flags = WLD_FLAG_MAP;
 
+	/* create wld context if not there */
 	if (!app->wld_context) {
 		app->wld_context = wld_wayland_create_context(app->display, WLD_SHM, WLD_NONE);
 		if (!app->wld_context) {
@@ -128,16 +130,20 @@ static void app_render(struct app *app)
 
 	app_update_size(app);
 
+	/* TODO? geom */
 	if (app->xdg_surface)
 		xdg_surface_set_window_geometry(app->xdg_surface, 0, 0,
 		                                app->window_width, app->window_height);
 
+	/* if size changed, create new wld surface */
 	if (app->surface_width != app->window_width || app->surface_height != app->window_height) {
+		/* destroy old surface */
 		if (app->wld_surface) {
 			wl_display_roundtrip(app->display);
 			wld_destroy_surface(app->wld_surface);
 		}
 
+		/* create new surface */
 		app->wld_surface = wld_wayland_create_surface(
 			app->wld_context,
 			(uint32_t)app->window_width,
@@ -155,6 +161,7 @@ static void app_render(struct app *app)
 		app->surface_height = app->window_height;
 	}
 
+	/* get wl_buffer */
 	struct wld_buffer *buffer = wld_surface_take(app->wld_surface);
 	if (!buffer) {
 		fprintf(stderr, "swiv: failed to get surface buffer\n");
@@ -162,14 +169,15 @@ static void app_render(struct app *app)
 		return;
 	}
 
+	/* map, clear buffer */
 	if (!wld_map(buffer)) {
 		fprintf(stderr, "swiv: failed to map surface buffer\n");
 		app->running = false;
 		return;
 	}
-
 	memset(buffer->map, 0, (size_t)buffer->pitch * buffer->height);
 
+	/* aspect ratio, fit size, offsets */
 	double scale_x = (double)app->window_width / (double)app->image.width;
 	double scale_y = (double)app->window_height / (double)app->image.height;
 	double scale = scale_x < scale_y ? scale_x : scale_y;
@@ -184,6 +192,7 @@ static void app_render(struct app *app)
 	int offset_x = (app->window_width - draw_w) / 2;
 	int offset_y = (app->window_height - draw_h) / 2;
 
+	/* create pixman images */
 	pixman_format_code_t dst_format = (app->format == WLD_FORMAT_ARGB8888)
 		? PIXMAN_a8r8g8b8 : PIXMAN_x8r8g8b8;
 	pixman_format_code_t src_format = app->image.has_alpha
@@ -203,6 +212,7 @@ static void app_render(struct app *app)
 		(uint32_t *)app->image.pixels,
 		app->image.width * 4);
 
+	/* transform, composite */
 	if (dst && src) {
 		pixman_transform_t transform;
 		pixman_transform_init_scale(&transform,
@@ -223,6 +233,7 @@ static void app_render(struct app *app)
 
 	wld_unmap(buffer);
 
+	/* export wl_buffer */
 	union wld_object object;
 	if (!wld_export(buffer, WLD_WAYLAND_OBJECT_BUFFER, &object)) {
 		fprintf(stderr, "swiv: failed to export wl_buffer\n");
@@ -230,10 +241,12 @@ static void app_render(struct app *app)
 		return;
 	}
 
+	/* add buffer listener for release events */
 	struct wl_buffer *wl_buffer = object.ptr;
 	if (!wl_proxy_get_listener((struct wl_proxy *)wl_buffer))
 		wl_buffer_add_listener(wl_buffer, &buffer_listener, buffer);
 
+	/* commit */
 	wl_surface_attach(app->surface, wl_buffer, 0, 0);
 	wl_surface_damage(app->surface, 0, 0, app->window_width, app->window_height);
 	wl_surface_commit(app->surface);
@@ -254,6 +267,7 @@ static void xdg_surface_configure(void *data, struct xdg_surface *surface, uint3
 {
 	struct app *app = data;
 
+	/* ack configure */
 	xdg_surface_ack_configure(surface, serial);
 	if (!app->configured) {
 		app->pending_width = app->image.width;
@@ -302,6 +316,7 @@ static void registry_global(void *data, struct wl_registry *registry,
 {
 	struct app *app = data;
 
+	/* bind wl_compositor and xdg_wm_base */
 	if (strcmp(interface, wl_compositor_interface.name) == 0) {
 		uint32_t bind_version = version < 4 ? version : 4;
 		app->compositor = wl_registry_bind(registry, name,
@@ -375,6 +390,7 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
+	/* registry */
 	app.registry = wl_display_get_registry(app.display);
 	wl_registry_add_listener(app.registry, &registry_listener, &app);
 	wl_display_roundtrip(app.display);
@@ -392,13 +408,16 @@ int main(int argc, char **argv)
 		return 1;
 	}
 
+	/* XDG surface */
 	app.xdg_surface = xdg_wm_base_get_xdg_surface(app.wm_base, app.surface);
 	xdg_surface_add_listener(app.xdg_surface, &xdg_surface_listener, &app);
 
+	/* XDG toplevel */
 	app.xdg_toplevel = xdg_surface_get_toplevel(app.xdg_surface);
 	xdg_toplevel_add_listener(app.xdg_toplevel, &xdg_toplevel_listener, &app);
 	xdg_toplevel_set_title(app.xdg_toplevel, "swiv");
 
+	/* set initial window geom to image size */
 	xdg_surface_set_window_geometry(app.xdg_surface, 0, 0,
 	                                app.image.width, app.image.height);
 
