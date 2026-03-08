@@ -18,6 +18,8 @@ enum swiv_action {
 	SWIV_ACTION_QUIT = 0,
 	SWIV_ACTION_TOGGLE_ANTIALIAS,
 	SWIV_ACTION_TOGGLE_LOCK_WINDOW_ASPECT,
+	SWIV_ACTION_ZOOM_IN,
+	SWIV_ACTION_ZOOM_OUT,
 };
 
 struct swiv_wayland_state {
@@ -27,6 +29,7 @@ struct swiv_wayland_state {
 	struct xdg_wm_base *wm_base;
 	struct wl_seat *seat;
 	struct wl_keyboard *keyboard;
+	struct wl_pointer *pointer;
 	struct wl_surface *surface;
 	struct xdg_surface *xdg_surface;
 	struct xdg_toplevel *xdg_toplevel;
@@ -46,6 +49,7 @@ struct swiv_view_state {
 	int pending_height;
 	int window_width;
 	int window_height;
+	double zoom;
 };
 
 struct swiv_runtime_state {
@@ -62,6 +66,7 @@ struct swiv_input_state {
 struct swiv_options {
 	bool antialias;
 	bool lock_window_aspect;
+	float zoom_step;
 };
 
 struct swiv_ctx {

@@ -43,6 +43,23 @@ static void keyboard_modifiers(void *data, struct wl_keyboard *keyboard,
 static void keyboard_repeat_info(void *data, struct wl_keyboard *keyboard,
                                  int32_t rate, int32_t delay);
 static uint32_t mods_pressed(struct xkb_state *state);
+static void pointer_axis(void *data, struct wl_pointer *pointer, uint32_t time,
+                         uint32_t axis, wl_fixed_t value);
+static void pointer_axis_discrete(void *data, struct wl_pointer *pointer, uint32_t axis,
+                                  int32_t discrete);
+static void pointer_axis_source(void *data, struct wl_pointer *pointer, uint32_t source);
+static void pointer_axis_stop(void *data, struct wl_pointer *pointer, uint32_t time,
+                              uint32_t axis);
+static void pointer_button(void *data, struct wl_pointer *pointer, uint32_t serial,
+                           uint32_t time, uint32_t button, uint32_t state);
+static void pointer_enter(void *data, struct wl_pointer *pointer, uint32_t serial,
+                          struct wl_surface *surface, wl_fixed_t surface_x,
+                          wl_fixed_t surface_y);
+static void pointer_frame(void *data, struct wl_pointer *pointer);
+static void pointer_leave(void *data, struct wl_pointer *pointer, uint32_t serial,
+                          struct wl_surface *surface);
+static void pointer_motion(void *data, struct wl_pointer *pointer, uint32_t time,
+                           wl_fixed_t surface_x, wl_fixed_t surface_y);
 static void registry_global(void *data, struct wl_registry *registry,
                             uint32_t name, const char *interface, uint32_t version);
 static void registry_remove(void *data, struct wl_registry *registry, uint32_t name);
@@ -69,6 +86,18 @@ static const struct wl_keyboard_listener keyboard_listener = {
 	.key = keyboard_key,
 	.modifiers = keyboard_modifiers,
 	.repeat_info = keyboard_repeat_info,
+};
+
+static const struct wl_pointer_listener pointer_listener = {
+	.enter = pointer_enter,
+	.leave = pointer_leave,
+	.motion = pointer_motion,
+	.button = pointer_button,
+	.axis = pointer_axis,
+	.frame = pointer_frame,
+	.axis_source = pointer_axis_source,
+	.axis_stop = pointer_axis_stop,
+	.axis_discrete = pointer_axis_discrete,
 };
 
 static const struct wl_seat_listener seat_listener = {
@@ -243,6 +272,97 @@ static uint32_t mods_pressed(struct xkb_state *state)
 	return mods;
 }
 
+static void pointer_axis(void *data, struct wl_pointer *pointer, uint32_t time,
+                         uint32_t axis, wl_fixed_t value)
+{
+	struct swiv_ctx *ctx = data;
+	double scroll;
+	(void)pointer;
+	(void)time;
+
+	if (axis != WL_POINTER_AXIS_VERTICAL_SCROLL)
+		return;
+
+	scroll = wl_fixed_to_double(value);
+	if (scroll <= -1.0) /* scroll up */
+		handle_action(ctx, SWIV_ACTION_ZOOM_IN);
+	else if (scroll >= 1.0) /* scroll down */
+		handle_action(ctx, SWIV_ACTION_ZOOM_OUT);
+}
+
+static void pointer_axis_discrete(void *data, struct wl_pointer *pointer, uint32_t axis,
+                                  int32_t discrete)
+{
+	(void)data;
+	(void)pointer;
+	(void)axis;
+	(void)discrete;
+}
+
+static void pointer_axis_source(void *data, struct wl_pointer *pointer, uint32_t source)
+{
+	(void)data;
+	(void)pointer;
+	(void)source;
+}
+
+static void pointer_axis_stop(void *data, struct wl_pointer *pointer, uint32_t time,
+                              uint32_t axis)
+{
+	(void)data;
+	(void)pointer;
+	(void)time;
+	(void)axis;
+}
+
+static void pointer_button(void *data, struct wl_pointer *pointer, uint32_t serial,
+                           uint32_t time, uint32_t button, uint32_t state)
+{
+	(void)data;
+	(void)pointer;
+	(void)serial;
+	(void)time;
+	(void)button;
+	(void)state;
+}
+
+static void pointer_enter(void *data, struct wl_pointer *pointer, uint32_t serial,
+                          struct wl_surface *surface, wl_fixed_t surface_x,
+                          wl_fixed_t surface_y)
+{
+	(void)data;
+	(void)pointer;
+	(void)serial;
+	(void)surface;
+	(void)surface_x;
+	(void)surface_y;
+}
+
+static void pointer_frame(void *data, struct wl_pointer *pointer)
+{
+	(void)data;
+	(void)pointer;
+}
+
+static void pointer_leave(void *data, struct wl_pointer *pointer, uint32_t serial,
+                          struct wl_surface *surface)
+{
+	(void)data;
+	(void)pointer;
+	(void)serial;
+	(void)surface;
+}
+
+static void pointer_motion(void *data, struct wl_pointer *pointer, uint32_t time,
+                           wl_fixed_t surface_x, wl_fixed_t surface_y)
+{
+	(void)data;
+	(void)pointer;
+	(void)time;
+	(void)surface_x;
+	(void)surface_y;
+}
+
 static void registry_global(void *data, struct wl_registry *registry,
                             uint32_t name, const char *interface, uint32_t version)
 {
@@ -275,6 +395,16 @@ static void registry_remove(void *data, struct wl_registry *registry, uint32_t n
 static void seat_capabilities(void *data, struct wl_seat *seat, uint32_t capabilities)
 {
 	struct swiv_ctx *ctx = data;
+
+	/* if seat has pointer cap, get wl_pointer, add listener */
+	if ((capabilities & WL_SEAT_CAPABILITY_POINTER) && !ctx->wl.pointer) {
+		ctx->wl.pointer = wl_seat_get_pointer(seat);
+		if (ctx->wl.pointer)
+			wl_pointer_add_listener(ctx->wl.pointer, &pointer_listener, ctx);
+	} else if (!(capabilities & WL_SEAT_CAPABILITY_POINTER) && ctx->wl.pointer) {
+		wl_pointer_destroy(ctx->wl.pointer);
+		ctx->wl.pointer = NULL;
+	}
 
 	/* if seat has keyboard cap, get wl_keyboard, add listener */
 	if ((capabilities & WL_SEAT_CAPABILITY_KEYBOARD) && !ctx->wl.keyboard) {

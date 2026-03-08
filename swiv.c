@@ -26,6 +26,8 @@ static void app_cleanup(struct swiv_ctx *ctx)
 		xdg_surface_destroy(ctx->wl.xdg_surface);
 	if (ctx->wl.keyboard)
 		wl_keyboard_destroy(ctx->wl.keyboard);
+	if (ctx->wl.pointer)
+		wl_pointer_destroy(ctx->wl.pointer);
 	if (ctx->wl.seat)
 		wl_seat_destroy(ctx->wl.seat);
 	if (ctx->wl.surface)
@@ -111,6 +113,16 @@ void handle_action(struct swiv_ctx *ctx, enum swiv_action action)
 		if (ctx->runtime.configured)
 			render(ctx);
 		break;
+	case SWIV_ACTION_ZOOM_IN:
+		ctx->view.zoom *= ctx->options.zoom_step;
+		if (ctx->runtime.configured)
+			render(ctx);
+		break;
+	case SWIV_ACTION_ZOOM_OUT:
+		ctx->view.zoom /= ctx->options.zoom_step;
+		if (ctx->runtime.configured)
+			render(ctx);
+		break;
 	}
 }
 
@@ -171,7 +183,7 @@ void render(struct swiv_ctx *ctx)
 	/* aspect ratio, fit size, offsets */
 	double scale_x = (double)ctx->view.window_width / (double)ctx->view.image.width;
 	double scale_y = (double)ctx->view.window_height / (double)ctx->view.image.height;
-	double scale = scale_x < scale_y ? scale_x : scale_y;
+	double scale = (scale_x < scale_y ? scale_x : scale_y) * ctx->view.zoom;
 
 	int draw_w = (int)(ctx->view.image.width * scale + 0.5);
 	int draw_h = (int)(ctx->view.image.height * scale + 0.5);
@@ -314,9 +326,11 @@ static bool setup(struct swiv_ctx *ctx)
 	if (ctx->render.format == WLD_FORMAT_XRGB8888 && ctx->view.image.has_alpha)
 		image_force_opaque(&ctx->view.image);
 
-	/* options */
-	ctx->options.antialias = false;
-	ctx->options.lock_window_aspect = false;
+	/* TODO options */
+	ctx->options.antialias = true;
+	ctx->options.lock_window_aspect = true;
+	ctx->options.zoom_step = 1.1;
+	ctx->view.zoom = 1;
 
 	return true;
 }
