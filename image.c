@@ -1,11 +1,10 @@
-#include "image.h"
-
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#include "image.h"
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
 
 static void set_error(char *err, size_t err_len, const char *msg)
 {
@@ -111,3 +110,4 @@ void image_force_opaque(struct image *image)
 
 	image->has_alpha = false;
 }
+

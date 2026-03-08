@@ -28,3 +28,4 @@ void image_free(struct image *image);
 void image_force_opaque(struct image *image);
 
 #endif
+

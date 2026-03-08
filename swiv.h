@@ -1,0 +1,45 @@
+#ifndef SWIV_H
+#define SWIV_H
+
+#include <stdbool.h>
+
+#include <wayland-client.h>
+#include <wld/wayland.h>
+#include <wld/wld.h>
+
+#include "image.h"
+#include "protocol/xdg-shell-client-protocol.h"
+
+
+struct swiv_ctx {
+	struct wl_display *display;
+	struct wl_registry *registry;
+	struct wl_compositor *compositor;
+	struct xdg_wm_base *wm_base;
+	struct wl_surface *surface;
+	struct xdg_surface *xdg_surface;
+	struct xdg_toplevel *xdg_toplevel;
+
+	struct wld_context *wld_context;
+	struct wld_surface *wld_surface;
+	enum wld_format format;
+
+	struct image image;
+	bool configured;
+	bool running;
+
+	int pending_width;
+	int pending_height;
+	int window_width;
+	int window_height;
+	int surface_width;
+	int surface_height;
+};
+
+extern struct swiv_ctx *swiv;
+
+void app_render(struct swiv_ctx *ctx);
+void aspect_fit(int in_w, int in_h, int img_w, int img_h, int *out_w, int *out_h);
+
+#endif /* SWIV_H */
+

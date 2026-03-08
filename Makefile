@@ -25,6 +25,7 @@ LDLIBS += -lm
 
 SOURCES = \
 	swiv.c \
+	wayland.c \
 	image.c \
 	${PROTO_XDG_CLIENT_C}
 
@@ -43,6 +44,7 @@ ${PROTO_XDG_CLIENT_H} ${PROTO_XDG_CLIENT_C}: ${PROTO_XDG}
 	${WAYLAND_SCANNER} public-code ${PROTO_XDG} ${PROTO_XDG_CLIENT_C}
 
 swiv.o: ${PROTO_XDG_CLIENT_H}
+wayland.o: ${PROTO_XDG_CLIENT_H}
 
 .c.o:
 	${CC} ${CFLAGS} ${CPPFLAGS} -c -o $@ $<
