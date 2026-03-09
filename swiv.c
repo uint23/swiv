@@ -385,7 +385,7 @@ static bool setup(struct swiv_ctx *ctx)
 
 	/* TODO options */
 	ctx->options.antialias = true;
-	ctx->options.lock_window_aspect = true;
+	ctx->options.lock_window_aspect = false;
 	ctx->options.zoom_step = 1.1;
 	ctx->view.zoom = 1;
 	ctx->view.pan_x = 0;
